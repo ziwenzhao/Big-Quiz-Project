@@ -1,0 +1,138 @@
+//The main idea is to use dp algorithm to get the the number of substrings in Kw(0), Kw(1), Kw(2),..., Kw(n).
+//substring # in Kw(i)=substring # in Kw(i-1)+substring # in Kw(i-2)+substring # crossing Kw(i-1) and Kw(i-2)
+//the crossing area is repetitive when n is large enough.
+
+
+//The other work is just to deal with corner cases;
+
+
+public class Solution {
+    public double count(int n, String s) {
+    	//corner case: when n==0
+    	if(n==0){
+    		return "kloc".contains(s)?1:0;
+    	}
+    	//dpString store Kw(n) from 0 to m (mth's length just larger than s.lenth ), it serves for dp algorithm.
+    	//We can also use recursive method, but since only store up to m, the space is definitely enough, 
+    	//so we can use dp algorithm to save time.
+    	List<String> dpString=new ArrayList<>();
+    	
+    	//dpCountSubString stores the number of substrings in Kw(n) from 0 to n, serves for dp algorithm.
+    	double []dpCountSubString=new double[n+1];
+    	dpString.add("kloc");
+    	dpString.add("work");
+    	
+    	
+    	//find the first string (curr) with length >= s.length-1.
+    	String curr="";
+    	while(dpString.size()-1<=n){
+    		curr=dpString.get(dpString.size()-1);
+    		if(curr.length()<s.length()-1){
+    			dpString.add(dpString.get(dpString.size()-1)+dpString.get(dpString.size()-2));
+    		}else break;
+    	}
+    	
+    	//if Kw(n) is shorter than s, then Kw(n) contains 0 s.
+    	if(dpString.size()-1>n){
+    		return 0;
+    	}
+    	
+    	//pre:Kw(m-1) is the string before curr:Kw(m)
+    	String pre=dpString.get(dpString.size()-2);
+    	
+    	//next:Kw(m+1) is the string after curr:Kw(m)
+    	String next=curr+pre;
+    	
+    	
+    	
+    	//a corner case, when s is so short, that the first two words longer than s.length-1.
+    	if(dpString.size()==2){
+    		for(int i=0;i<=n;i++){
+    			if(i==0){
+    				if("kloc".contains(s)){
+    					dpCountSubString[i]=1;
+    				}
+    			}
+    			if(i==1){
+    				if("work".contains(s)){
+    					dpCountSubString[i]=1;
+    				}
+    			}
+    			if(i==2){
+    				String string="workkloc";
+    				for(int j=0;j<=string.length()-s.length();j++){
+    					if(string.substring(j,j+s.length()).equals(s)){
+    						dpCountSubString[2]+=1;
+    					}
+    				}
+    			}
+    			if(i>2){
+    				String crossString;
+    				//if even, then the crossing area is work|work.
+    				if((i-2)%2==0){
+    					crossString="work".substring("work".length()-s.length()+1)+"work".substring(0,s.length()-1);
+    				}else{
+    					//if odd, then the crossing area is kloc|work.
+    					crossString="kloc".substring("kloc".length()-s.length()+1)+"work".substring(0,s.length()-1);
+    				}
+    				//get substring # in crossing area
+    				int countCross=0;
+    				for(int j=0;j<=crossString.length()-s.length();j++){
+    					if(crossString.substring(j,j+s.length()).equals(s)){
+    						countCross++;
+    					}
+    				}
+                    //# in Kw(i)=# in Kw(i-1)+# in Kw(i-2)+# crossing Kw(i-1) and Kw(i-2)
+    				dpCountSubString[i]=countCross+dpCountSubString[i-2]+dpCountSubString[i-1];
+    			}
+    		}
+    	}
+    	// The general case, s is long, the first String longer than s.length-1 is Kw(m);
+    	if(dpString.size()>2){
+    		//get dpCountSubString[i] from 0 to n
+    		for(int i=0;i<=n;i++){
+    			//String before Kw(m) they are shorter than s, so contains 0 s
+	    		if(i<dpString.size()-1){
+	    			dpCountSubString[i]=0;
+	    		}else if(i==dpString.size()-1){ //get dpCountSubString for Kw(m)
+	    			for(int j=0;j<=curr.length()-s.length();j++){
+	    				if(curr.substring(j,j+s.length()).equals(s)){
+	    					dpCountSubString[i]+=1;
+	    				}
+	    			}
+	    		}else if(i==dpString.size()){//get dpCountSubString for Kw(m+1)
+	    			int countCross=0;
+	    			for(int j=curr.length()-s.length()+1;j<=curr.length()+pre.length()-s.length();j++){
+	    				if(s.equals(curr.substring(j)+pre.substring(0,s.length()-curr.length()+j))){
+	    					countCross++;
+	    				}
+	    			}
+	    			dpCountSubString[i]=dpCountSubString[i-1]+countCross;
+	    		}else if(i>dpString.size()){//get dpCountSubString for Kw(m+2) to Kw(n), the crossing area repetition starts from Kw(m+2)
+	    			int countCross=0;
+	    			if((i-(dpString.size()-1))%2==0){
+	    				//if even, the crossing area is Kw(m+1)|Kw(m)
+	    				//issue:if next exceeds limit, have to split next to curr and pre;
+	    				for(int j=next.length()-s.length()+1;j<=next.length()-1;j++){
+	    					if(s.equals(next.substring(j)+curr.substring(0,s.length()-next.length()+j))){
+	    						countCross++;
+	    					}
+	    				}
+	    			}else{//if odd, the crossing area is Kw(m) | Kw(m)
+	    				for(int j=curr.length()-s.length()+1;j<=curr.length()-1;j++){
+	    					if(s.equals(curr.substring(j)+curr.substring(0,s.length()-curr.length()+j))){
+	    						countCross++;
+	    					}
+	    				}
+	    			}
+	    			//# in Kw(i)=# in Kw(i-1)+# in Kw(i-2)+# crossing Kw(i-1) and Kw(i-2)
+	    			dpCountSubString[i]=countCross+dpCountSubString[i-1]+dpCountSubString[i-2];
+	    		}
+	    		
+	    	}
+    	}
+    	//return # in Kw(n)
+    	return dpCountSubString[n];
+    }
+    
+}
